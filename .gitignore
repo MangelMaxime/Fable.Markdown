@@ -1,0 +1,12 @@
+node_modules/
+
+**/bin/
+**/obj/
+.DS_Store
+
+.fake/
+src/WebApp/output/
+src/WebApp/public/
+packages/
+paket-files/
+tests/dist/
