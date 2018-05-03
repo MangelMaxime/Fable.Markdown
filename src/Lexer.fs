@@ -22,19 +22,19 @@ let inline isLineTerminator c =
     | c when c = char 0x2029 -> true
     | _ -> false
 
+// Use [<Fable.Core.StringEnum>] for debug purpose
+// This make the output more readbile for human
+//  Replace with enum for performance
+[<Fable.Core.StringEnum>]
 type Symbol =
     // Special markers
-    | StartOfInput = 0
-    | EndOfInput = 1
-
-    | Heading1 = 2
-    | Heading2 = 3
-    | Heading3 = 4
-    | Heading4 = 5
-    | Heading5 = 6
-    | Heading6 = 7
-
-    | LineTerminator = 8
+    | StartOfInput
+    | EndOfInput
+    | Hash
+    | LineTerminator
+    | RawText
+    | Space
+    | Asterix
 
 type InputStream =
     { mutable Source : string
@@ -119,38 +119,65 @@ let private headings (stream : InputStream) =
     stream |> clearBuffer
     (stream |> current) |> buffer stream
 
-    let rec headings  (symbol : Symbol)  (stream : InputStream) =
-        stream |> advance
+    // let rec headings  (symbol : Symbol)  (stream : InputStream) =
+    //     stream |> advance
 
-        if stream |> continue' then
+    //     if stream |> continue' then
+    //         match stream |> current with
+    //         | '#' as c ->
+    //             c |> buffer stream
+    //             stream |> headings symbol
+    //         | c when c |> isWhiteSpace ->
+    //             let symbol =
+    //                 match stream |> bufferValue with
+    //                 | "#" -> Symbol.Heading1
+    //                 | "##" -> Symbol.Heading2
+    //                 | "###" -> Symbol.Heading3
+    //                 | "####" -> Symbol.Heading4
+    //                 | "#####" -> Symbol.Heading5
+    //                 | "######" -> Symbol.Heading6
+    //                 | _ -> failwith "Unexpected title size"
+
+    //             stream |> clearBuffer
+    //             stream |> headings symbol
+
+    //         | c when c |> isLineTerminator ->
+    //             stream |> output symbol (stream |> bufferValue) line column
+
+    //         | c ->
+    //             c |> buffer stream
+    //             stream |> headings symbol
+    //     else
+    //         stream |> output symbol (stream |> bufferValue) line column
+
+    // stream |> headings Symbol.Heading1
+
+let unorderedList (stream : InputStream) =
+    stream |> advance
+
+let isValidRawText (c : char) =
+    match c with
+    | '#' | '*' -> false
+    | c when c |> isLineTerminator -> false
+    | c when c |> isWhiteSpace -> false
+    | _ -> true
+
+let rawText (stream : InputStream) =
+    stream |> clearBuffer
+
+    let rec rawText (stream : InputStream) =
+        if stream  |> continue' then
             match stream |> current with
-            | '#' as c ->
+            | c when c |> isValidRawText ->
                 c |> buffer stream
-                stream |> headings symbol
-            | c when c |> isWhiteSpace ->
-                let symbol =
-                    match stream |> bufferValue with
-                    | "#" -> Symbol.Heading1
-                    | "##" -> Symbol.Heading2
-                    | "###" -> Symbol.Heading3
-                    | "####" -> Symbol.Heading4
-                    | "#####" -> Symbol.Heading5
-                    | "######" -> Symbol.Heading6
-                    | _ -> failwith "Unexpected title size"
-
-                stream |> clearBuffer
-                stream |> headings symbol
-
-            | c when c |> isLineTerminator ->
-                stream |> output symbol (stream |> bufferValue) line column
-
-            | c ->
-                c |> buffer stream
-                stream |> headings symbol
+                stream |> advance
+                stream |> rawText
+            | _ ->
+                stream |> output Symbol.RawText (stream |> bufferValue) stream.Line stream.Column
         else
-            stream |> output symbol (stream |> bufferValue) line column
+            stream |> output Symbol.RawText (stream |> bufferValue) stream.Line stream.Column
 
-    stream |> headings Symbol.Heading1
+    stream |> rawText
 
 let tokenize (text : string) =
     let stream = createInputStream(text)
@@ -159,15 +186,27 @@ let tokenize (text : string) =
         if stream |> continue' then
             match stream |> current with
             | '#' ->
-                stream |> headings
+                stream |> advance
+                stream |> output Symbol.Hash empty stream.Line stream.Column
+
+            | '*' ->
+                stream |> advance
+                stream |> output Symbol.Asterix empty stream.Line stream.Column
+
+            | c when c |> isWhiteSpace ->
+                stream |> advance
+                stream |> output Symbol.Space empty stream.Line stream.Column
 
             | c when c |> isLineTerminator ->
                 stream |> nextLine
                 stream |> advance
                 stream |> output Symbol.LineTerminator empty stream.Line stream.Column
 
+            | c when c |> isValidRawText -> stream |> rawText
+
             | c ->
-                failwithf "Incorrect input %c" c
+                failwithf "Invalid input `%c`" c
+
         else
             stream |> endOfInput
 

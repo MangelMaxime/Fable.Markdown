@@ -6,7 +6,6 @@ module Markdown =
     open Fable.Markdown.Common
     open Fable.Markdown.AST
     open Fable.Markdown.Parser
-    open Fable.Markdown.Formatting
     open System
 
     // let parse(input: string) =

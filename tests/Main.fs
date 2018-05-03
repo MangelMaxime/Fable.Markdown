@@ -14,7 +14,7 @@ type Test =
 
 let tests : Test array = import "default" "./CommonMark_tests_0_28.json"
 
-QUnit.registerModule "Fable.Markdown tests"
+// QUnit.registerModule "Fable.Markdown tests"
 
 // let singleTest (rank : int) =
 //     QUnit.testCase ("Test n°" + string rank) <| fun asserter ->
@@ -33,6 +33,16 @@ QUnit.registerModule "Fable.Markdown tests"
 
 Fable.Markdown.Lexer.tokenize
     """# Maxime1
+## Maxime2"""
+|> printfn "%A"
+
+
+Fable.Markdown.Lexer.tokenize
+    """# Maxime1
+# foo *bar*
 * Item 1
 * Item 2"""
 |> printfn "%A"
+
+
+// [[2,"Maxime1",1,0]; [8,null,2,1]; [3,"Maxime2",2,1]; [1,null,-1,-1]]
