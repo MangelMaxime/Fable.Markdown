@@ -5,7 +5,7 @@
   <ItemGroup>
     <Compile Include="Common.fs" />
     <Compile Include="AST.fs" />
-    <Compile Include="Lexer.fs" />
+    <Compile Include="ParserLib.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Generator.fs" />
     <Compile Include="Main.fs" />
